@@ -25,8 +25,8 @@ class BullyProcess():
         self.Status = BullyProcessStatus.Killed
 
         self.DSSocket = None
-        #self.timer = threading.Timer(3, timer_elapsed)
-        #timer.start()
+        self.timer = threading.Timer(3, self.timer_elapsed)
+        self.timer.start()
 
     def Kill(self):
         self.Status = BullyProcessStatus.Killed
@@ -45,11 +45,11 @@ class BullyProcess():
 
     # ---------------------------------------------------------------------------------------- handlers
 
-    def timer_elapsed():
-        pass
+    def timer_elapsed(self):
+        self.clockSynchronization()
 
-    def clockSynchronization():
-        pass
+    def clockSynchronization(self):
+        self.Id += 10
 
     # ---------------------------------------------------------------------------------------- Commands
 
