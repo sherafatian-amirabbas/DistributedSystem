@@ -50,6 +50,7 @@ class BullyProcess():
 
     def clockSynchronization(self):
         self.Id += 10
+        # TODO: Kaya
 
     # ---------------------------------------------------------------------------------------- Commands
 
