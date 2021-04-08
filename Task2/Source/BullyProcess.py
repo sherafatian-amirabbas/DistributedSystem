@@ -1,4 +1,5 @@
 import enum
+import threading
 
 from DSPortManager import portManager
 from DSSharedData import sharedData
@@ -24,6 +25,11 @@ class BullyProcess():
         self.Status = BullyProcessStatus.Killed
 
         self.DSSocket = None
+        #self.timer = threading.Timer(3, timer_elapsed)
+        #timer.start()
+
+    def Kill(self):
+        self.Status = BullyProcessStatus.Killed
 
     def Run(self):
         self.Status = BullyProcessStatus.Run
@@ -36,6 +42,15 @@ class BullyProcess():
     def ToString(self):
         return str(self.Id) + ", " + self.Name + "_" + str(self.ParticipationCounter) + ", " + self.Clock
 
+
+    # ---------------------------------------------------------------------------------------- handlers
+
+    def timer_elapsed():
+        pass
+
+    def clockSynchronization():
+        pass
+
     # ---------------------------------------------------------------------------------------- Commands
 
     def PingCommandHandler(self, dsMessage):
@@ -45,7 +60,7 @@ class BullyProcess():
         return self.Id
 
     def StartElectionCommandHandler(self, dsMessage):
-        nextProcessId = self.nudgeOtherProcessesAndGetNextProcessID()
+        nextProcessId = self.getNextProcessID()
 
         if nextProcessId == -1:
             self.notifyProcessesAboutNewCoordinator()
@@ -61,7 +76,7 @@ class BullyProcess():
         self.CoordinatorProcessId = int(dsMessage.Argument)
 
     def UpdateParticipationCommandHandler(self):
-        self.CoordinatorProcessId = self.CoordinatorProcessId + 1
+        self.ParticipationCounter = self.ParticipationCounter + 1
 
     def ListCommandHandler(self, dsMessage):
         desc = str(self.Id) + ", " + self.Name + "_" + str(self.ParticipationCounter)
@@ -125,7 +140,7 @@ class BullyProcess():
         for process in sharedData.BullyProcesses:
             process.DSSocket.SendMessage(DSMessage(DSMessageType.UpdateClock))
 
-    def nudgeOtherProcessesAndGetNextProcessID(self):
+    def getNextProcessID(self):
         NextProcessId = -1
 
         processes = list(filter(lambda x: x.Id > self.Id, sharedData.BullyProcesses))
