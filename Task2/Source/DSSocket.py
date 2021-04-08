@@ -3,14 +3,13 @@ import enum
 from DSMessage import DSMessageType
 
 
-
 class DSSocketStatus(enum.Enum):
     Open = 1
     Closed = 2
 
 
 class DSSocketAddress:
-    def __init__(self, port, host = "127.0.0.1"):
+    def __init__(self, port, host="127.0.0.1"):
         self.Port = port
         self.Host = host
 
@@ -24,14 +23,11 @@ class DSSocket:
         self.BullyProcess = bullyProcess
         self.Status = DSSocketStatus.Closed
 
-
     def Open(self):
         self.Status = DSSocketStatus.Open
 
-
     def Close(self):
         self.Status = DSSocketStatus.Closed
-        
 
     def SendMessage(self, dsMessage):
         result = None
@@ -48,5 +44,11 @@ class DSSocket:
             result = self.BullyProcess.UpdateParticipationCommandHandler(dsMessage)
         if dsMessage.Type == DSMessageType.List:
             result = self.BullyProcess.ListCommandHandler(dsMessage)
+        if dsMessage.Type == DSMessageType.Clock:
+            result = self.BullyProcess.ClockCommandHandler(dsMessage)
+        if dsMessage.Type == DSMessageType.UpdateClock:
+            result = self.BullyProcess.UpdateClockCommandHandler(dsMessage)
+        if dsMessage.Type == DSMessageType.GetClock:
+            result = self.BullyProcess.GetClockCommandHandler(dsMessage)
 
         return result
