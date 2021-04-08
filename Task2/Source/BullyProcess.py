@@ -67,12 +67,26 @@ class BullyProcess():
         self.CoordinatorProcessId = int(dsMessage.Argument)
 
 
-    def UpdateParticipation(self):
+    def UpdateParticipationCommandHandler(self):
         self.CoordinatorProcessId = self.CoordinatorProcessId + 1
 
 
     def ListCommandHandler(self, dsMessage):
-        return "List Command Was Executed"
+        desc = str(self.Id) + ", " + self.Name + "_" + str(self.ParticipationCounter)
+        if self.Id == self.CoordinatorProcessId:
+            desc += " (Coordinator)"
+        desc += "\n"
+
+        processes = list(filter(lambda x: x.Id > self.Id, sharedData.BullyProcesses))
+        processesLength = len(processes)
+        if processesLength != 0 :
+            processes = BullyProcess.GetSortProcessList(processes)
+            nextProc = processes[0]
+            msg = DSMessage(DSMessageType.List)
+            result = nextProc.DSSocket.SendMessage(msg)
+            desc += result
+
+        return desc
 
     # --------------------------------------------------------------------------------- Private Methods
 

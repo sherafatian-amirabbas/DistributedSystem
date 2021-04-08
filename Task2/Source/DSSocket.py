@@ -45,7 +45,7 @@ class DSSocket:
         if dsMessage.Type == DSMessageType.NewCoordinator:
             result = self.BullyProcess.NewCoordinatorCommandHandler(dsMessage)
         if dsMessage.Type == DSMessageType.UpdateParticipation:
-            result = self.BullyProcess.UpdateParticipation(dsMessage)
+            result = self.BullyProcess.UpdateParticipationCommandHandler(dsMessage)
         if dsMessage.Type == DSMessageType.List:
             result = self.BullyProcess.ListCommandHandler(dsMessage)
 

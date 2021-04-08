@@ -63,7 +63,7 @@ def getCoordiatorID():
     return sharedData.BullyProcesses[0].CoordinatorProcessId
 
 
-# ------------------------------------------------------------------------------- private functions
+# -------------------------------------------------------------------------------
 
 
 @shell(prompt='clock-sync-by-bully > ')
@@ -76,6 +76,15 @@ def main():
 def init(file):
     coordinatorId = initialize(file)
     click.echo("The Process with the Id: '" + str(coordinatorId) + "' is the Coordinator now.")
+
+
+@main.command()
+def list():
+    processes = BullyProcess.GetSortProcessList(sharedData.BullyProcesses)
+    firstProc = processes[0]
+    msg = DSMessage(DSMessageType.List)
+    result = firstProc.DSSocket.SendMessage(msg)
+    click.echo(result)
 
 
 if __name__ == '__main__':
