@@ -8,6 +8,9 @@ class DSMessageType(enum.Enum):
     NewCoordinator = 4
     UpdateParticipation = 5
     List = 6
+    Clock = 7
+    UpdateClock = 8
+    GetClock = 9
 
 
 class DSMessage:

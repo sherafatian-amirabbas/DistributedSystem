@@ -25,7 +25,6 @@ class BullyProcess():
 
         self.DSSocket = None
 
-
     def Run(self):
         self.Status = BullyProcessStatus.Run
 
@@ -33,21 +32,17 @@ class BullyProcess():
         socketAddress = DSSocketAddress(port)
         self.DSSocket = DSSocket(socketAddress, self)
         self.DSSocket.Open()
-        
 
     def ToString(self):
         return str(self.Id) + ", " + self.Name + "_" + str(self.ParticipationCounter) + ", " + self.Clock
-
 
     # ---------------------------------------------------------------------------------------- Commands
 
     def PingCommandHandler(self, dsMessage):
         return "Hey... I am alive!"
 
-
     def NudgeCommandHandler(self, dsMessage):
         return self.Id
-
 
     def StartElectionCommandHandler(self, dsMessage):
         nextProcessId = self.nudgeOtherProcessesAndGetNextProcessID()
@@ -58,18 +53,15 @@ class BullyProcess():
             processes = list(filter(lambda x: x.Id == nextProcessId, sharedData.BullyProcesses))
             processes = BullyProcess.GetSortProcessList(processes)
             nextProc = processes[0]
-            
+
             msg = DSMessage(DSMessageType.StartElection)
             nextProc.DSSocket.SendMessage(msg)
-
 
     def NewCoordinatorCommandHandler(self, dsMessage):
         self.CoordinatorProcessId = int(dsMessage.Argument)
 
-
     def UpdateParticipationCommandHandler(self):
         self.CoordinatorProcessId = self.CoordinatorProcessId + 1
-
 
     def ListCommandHandler(self, dsMessage):
         desc = str(self.Id) + ", " + self.Name + "_" + str(self.ParticipationCounter)
@@ -79,7 +71,7 @@ class BullyProcess():
 
         processes = list(filter(lambda x: x.Id > self.Id, sharedData.BullyProcesses))
         processesLength = len(processes)
-        if processesLength != 0 :
+        if processesLength != 0:
             processes = BullyProcess.GetSortProcessList(processes)
             nextProc = processes[0]
             msg = DSMessage(DSMessageType.List)
@@ -88,14 +80,57 @@ class BullyProcess():
 
         return desc
 
+    def ClockCommandHandler(self, dsMessage):
+
+        self.updateClocks()
+
+        desc = self.Name + "_" + str(self.ParticipationCounter) + ", " + self.Clock + "\n"
+
+        processes = list(filter(lambda x: x.Id > self.Id, sharedData.BullyProcesses))
+        processesLength = len(processes)
+        if processesLength != 0:
+            processes = BullyProcess.GetSortProcessList(processes)
+            nextProc = processes[0]
+            msg = DSMessage(DSMessageType.Clock)
+            result = nextProc.DSSocket.SendMessage(msg)
+            desc += result
+        return desc
+
+    def UpdateClockCommandHandler(self, dsMessage):
+        if not self.isCoordinator():
+            self.Clock = self.getCoordinatorClock()
+
+    def GetClockCommandHandler(self, dsMessage):
+        return self.Clock
+
     # --------------------------------------------------------------------------------- Private Methods
+
+    def getCoordinator(self):
+        coordinatorProc = None
+        for index, process in enumerate(sharedData.BullyProcesses):
+            if self.CoordinatorProcessId == process.Id:
+                coordinatorProc = process
+                break
+
+        return coordinatorProc
+
+    def getCoordinatorClock(self):
+        process = self.getCoordinator()
+        return process.DSSocket.SendMessage(DSMessage(DSMessageType.GetClock))
+
+    def isCoordinator(self):
+        return self.Id == self.CoordinatorProcessId
+
+    def updateClocks(self):
+        for process in sharedData.BullyProcesses:
+            process.DSSocket.SendMessage(DSMessage(DSMessageType.UpdateClock))
 
     def nudgeOtherProcessesAndGetNextProcessID(self):
         NextProcessId = -1
 
         processes = list(filter(lambda x: x.Id > self.Id, sharedData.BullyProcesses))
         processesLength = len(processes)
-        if processesLength != 0 :
+        if processesLength != 0:
 
             processIds = []
             for index, process in enumerate(processes):
@@ -113,7 +148,6 @@ class BullyProcess():
 
         return NextProcessId
 
-
     def notifyProcessesAboutNewCoordinator(self):
         self.CoordinatorProcessId = self.Id
         for index, process in enumerate(sharedData.BullyProcesses):
@@ -121,9 +155,8 @@ class BullyProcess():
                 msg = DSMessage(DSMessageType.NewCoordinator, self.Id)
                 process.DSSocket.SendMessage(msg)
 
+    # --------------------------------------------------------------------------------- static Methods
 
-# --------------------------------------------------------------------------------- static Methods
-
-    @staticmethod    
+    @staticmethod
     def GetSortProcessList(processes):
-            return sorted(processes, key=lambda proc : proc.Id)
+        return sorted(processes, key=lambda proc: proc.Id)

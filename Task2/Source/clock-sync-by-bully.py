@@ -7,7 +7,6 @@ from BullyProcess import BullyProcess
 from DSMessage import DSMessage, DSMessageType
 
 
-
 # ------------------------------------------------------------------------------- private functions
 
 def initialize(file):
@@ -28,21 +27,21 @@ def getProcessesFromFile(file_name):
 
     with open(file_name, "r") as file_object:
         lines = file_object.read().splitlines()
-    
+
         for index, line in enumerate(lines):
-        
+
             if line is None or line == " " or line == "":
                 continue
 
-            dataArrkay = line.split(', ')
-            id = dataArrkay[0]
-            
-            nameAndParticipationStr = dataArrkay[1]
+            dataArray = line.split(', ')
+            id = dataArray[0]
+
+            nameAndParticipationStr = dataArray[1]
             nameAndParticipationArr = nameAndParticipationStr.split('_')
             name = nameAndParticipationArr[0]
             participation = nameAndParticipationArr[1]
 
-            clock = dataArrkay[2]
+            clock = dataArray[2]
 
             process = BullyProcess(int(id), name, int(participation), clock)
             bullyProcesses.append(process)
@@ -83,6 +82,15 @@ def list():
     processes = BullyProcess.GetSortProcessList(sharedData.BullyProcesses)
     firstProc = processes[0]
     msg = DSMessage(DSMessageType.List)
+    result = firstProc.DSSocket.SendMessage(msg)
+    click.echo(result)
+
+
+@main.command()
+def clock():
+    processes = BullyProcess.GetSortProcessList(sharedData.BullyProcesses)
+    firstProc = processes[0]
+    msg = DSMessage(DSMessageType.Clock)
     result = firstProc.DSSocket.SendMessage(msg)
     click.echo(result)
 
