@@ -1,11 +1,12 @@
 import enum
-import threading
 
 from DSPortManager import portManager
 from DSSharedData import sharedData
 
 from DSSocket import DSSocketAddress, DSSocket
 from DSMessage import DSMessage, DSMessageType
+
+from DSTimer import DSTimer
 
 
 class BullyProcessStatus(enum.Enum):
@@ -25,9 +26,9 @@ class BullyProcess():
         self.Status = BullyProcessStatus.Killed
 
         self.DSSocket = None
-        self.timer = threading.Timer(3, self.timer_elapsed)
-        self.timer.start()
-
+        self.timer = DSTimer(10, self.timer_elapsed)
+        self.timer.Start()
+  
     def Kill(self):
         self.Status = BullyProcessStatus.Killed
 
@@ -47,11 +48,12 @@ class BullyProcess():
 
     def timer_elapsed(self):
         self.clockSynchronization()
+        self.timer.Restart()
 
     def clockSynchronization(self):
-        #self.Id += 10
-        # TODO: Kaya
-        pass
+        if not self.isCoordinator():
+            self.syncClock()
+
 
     # ---------------------------------------------------------------------------------------- Commands
 
@@ -113,23 +115,22 @@ class BullyProcess():
             desc += result
         return desc
 
-    def SetTimeCommandHandler(self,dsMessage):
-        nodeId=int(dsMessage.Argument)
-        setToclock=dsMessage.Tag
-        process_name=[node for node in sharedData.BullyProcesses if node.Id==nodeId][0]
-        process_name.Clock=setToclock
-
-        return "node clock is updated"
+    def SetTimeCommandHandler(self, dsMessage):
+        self.Clock = dsMessage.Argument
+        return "Clock is changed"
 
 
     def UpdateClockCommandHandler(self, dsMessage):
         if not self.isCoordinator():
-            self.Clock = self.getCoordinatorClock()
+            self.syncClock()
 
     def GetClockCommandHandler(self, dsMessage):
         return self.Clock
 
     # --------------------------------------------------------------------------------- Private Methods
+
+    def syncClock(self):
+        self.Clock = self.getCoordinatorClock()
 
     def getCoordinator(self):
         coordinatorProc = None

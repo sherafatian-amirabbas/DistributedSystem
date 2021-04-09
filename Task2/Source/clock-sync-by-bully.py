@@ -5,6 +5,7 @@ from DSSharedData import sharedData
 
 from BullyProcess import BullyProcess
 from DSMessage import DSMessage, DSMessageType
+import time
 
 
 # ------------------------------------------------------------------------------- private functions
@@ -28,7 +29,7 @@ def getProcessesFromFile(file_name):
     with open(file_name, "r") as file_object:
         lines = file_object.read().splitlines()
 
-        for index, line in enumerate(lines):
+        for _, line in enumerate(lines):
 
             if line is None or line == " " or line == "":
                 continue
@@ -85,25 +86,30 @@ def list():
     result = firstProc.DSSocket.SendMessage(msg)
     click.echo(result)
 
+
+@main.command()
+def show():
+    processes = BullyProcess.GetSortProcessList(sharedData.BullyProcesses)
+    result = ""
+    for i in processes:
+        result += i.ToString() + "\n"
+    click.echo(result)
+
+
     
 @main.command()
-@click.argument('nodeid')
+@click.argument('process_id')
 @click.argument('clock')
-def set_time(nodeid,clock):
-    processId=int(nodeid)
-    clockTime=clock
-
-    processes=sharedData.BullyProcesses
-    process=[node for node in processes if node.Id ==processId]
-    
-    if len(process)==0:
-        click.echo("Node is not found please try again")
-    else:
+def set_time(process_id, clock):
+    processId = int(process_id)
+    process = sharedData.GetProcessByID(processId)
+    if process:
         msg=DSMessage(DSMessageType.SetTime)
-        msg.Argument=processId
-        msg.Tag=clockTime
-        result=process[0].DSSocket.SendMessage(msg)
+        msg.Argument = clock
+        result = process.DSSocket.SendMessage(msg)
         click.echo(result)
+    else:
+        click.echo("Process is not found please try again")
 
 
 @main.command()
@@ -113,6 +119,7 @@ def clock():
     msg = DSMessage(DSMessageType.Clock)
     result = firstProc.DSSocket.SendMessage(msg)
     click.echo(result)
+
 
 
 if __name__ == '__main__':
