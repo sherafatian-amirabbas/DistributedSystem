@@ -50,5 +50,7 @@ class DSSocket:
             result = self.BullyProcess.UpdateClockCommandHandler(dsMessage)
         if dsMessage.Type == DSMessageType.GetClock:
             result = self.BullyProcess.GetClockCommandHandler(dsMessage)
+        if dsMessage.Type == DSMessageType.SetTime:
+            result = self.BullyProcess.SetTimeCommandHandler(dsMessage)
 
         return result
