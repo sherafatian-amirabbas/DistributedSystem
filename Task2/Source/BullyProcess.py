@@ -49,8 +49,9 @@ class BullyProcess():
         self.clockSynchronization()
 
     def clockSynchronization(self):
-        self.Id += 10
+        #self.Id += 10
         # TODO: Kaya
+        pass
 
     # ---------------------------------------------------------------------------------------- Commands
 
@@ -111,6 +112,15 @@ class BullyProcess():
             result = nextProc.DSSocket.SendMessage(msg)
             desc += result
         return desc
+
+    def SetTimeCommandHandler(self,dsMessage):
+        nodeId=int(dsMessage.Argument)
+        setToclock=dsMessage.Tag
+        process_name=[node for node in sharedData.BullyProcesses if node.Id==nodeId][0]
+        process_name.Clock=setToclock
+
+        return "node clock is updated"
+
 
     def UpdateClockCommandHandler(self, dsMessage):
         if not self.isCoordinator():

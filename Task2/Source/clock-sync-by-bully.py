@@ -85,6 +85,26 @@ def list():
     result = firstProc.DSSocket.SendMessage(msg)
     click.echo(result)
 
+    
+@main.command()
+@click.argument('nodeid')
+@click.argument('clock')
+def set_time(nodeid,clock):
+    processId=int(nodeid)
+    clockTime=clock
+
+    processes=sharedData.BullyProcesses
+    process=[node for node in processes if node.Id ==processId]
+    
+    if len(process)==0:
+        click.echo("Node is not found please try again")
+    else:
+        msg=DSMessage(DSMessageType.SetTime)
+        msg.Argument=processId
+        msg.Tag=clockTime
+        result=process[0].DSSocket.SendMessage(msg)
+        click.echo(result)
+
 
 @main.command()
 def clock():
