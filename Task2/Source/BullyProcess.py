@@ -1,7 +1,7 @@
 import enum
+import threading
 
 from DSPortManager import portManager
-from DSSharedData import sharedData
 
 from DSSocket import DSSocketAddress, DSSocket
 from DSMessage import DSMessage, DSMessageType
@@ -24,13 +24,14 @@ class BullyProcess():
         self.DefaultClock = clock
         self.Clock = clock
         self.Status = BullyProcessStatus.Killed
+        self.sharedData = None
 
         self.DSSocket = None
         self.timer = DSTimer(10, self.timer_elapsed)
         self.timer.Start()
-  
-    def Kill(self):
-        self.Status = BullyProcessStatus.Killed
+
+    def Init(self, sharedData):
+        self.sharedData = sharedData
 
     def Run(self):
         self.Status = BullyProcessStatus.Run
@@ -41,13 +42,23 @@ class BullyProcess():
         self.DSSocket.Open()
 
     def ToString(self):
-        return str(self.Id) + ", " + self.Name + "_" + str(self.ParticipationCounter) + ", " + self.Clock
+        inf = str(self.Id) + ", " + self.Name + "_" + str(self.ParticipationCounter) + ", " + self.Clock
+        if self.isCoordinator():
+            inf += " (Coordinator)"
+        return inf
 
+    def Dispose(self):
+        self.DSSocket.Close()
 
     # ---------------------------------------------------------------------------------------- handlers
 
     def timer_elapsed(self):
-        self.clockSynchronization()
+        if BullyProcess.GetCoordinator(self.sharedData):
+            self.clockSynchronization()
+        else:
+            BullyProcess.StartElection(self.sharedData)
+            self.clockSynchronization()
+
         self.timer.Restart()
 
     def clockSynchronization(self):
@@ -69,7 +80,7 @@ class BullyProcess():
         if nextProcessId == -1:
             self.notifyProcessesAboutNewCoordinator()
         else:
-            processes = list(filter(lambda x: x.Id == nextProcessId, sharedData.BullyProcesses))
+            processes = list(filter(lambda x: x.Id == nextProcessId, self.sharedData.BullyProcesses))
             processes = BullyProcess.GetSortProcessList(processes)
             nextProc = processes[0]
 
@@ -88,7 +99,7 @@ class BullyProcess():
             desc += " (Coordinator)"
         desc += "\n"
 
-        processes = list(filter(lambda x: x.Id > self.Id, sharedData.BullyProcesses))
+        processes = list(filter(lambda x: x.Id > self.Id, self.sharedData.BullyProcesses))
         processesLength = len(processes)
         if processesLength != 0:
             processes = BullyProcess.GetSortProcessList(processes)
@@ -105,7 +116,7 @@ class BullyProcess():
 
         desc = self.Name + "_" + str(self.ParticipationCounter) + ", " + self.Clock + "\n"
 
-        processes = list(filter(lambda x: x.Id > self.Id, sharedData.BullyProcesses))
+        processes = list(filter(lambda x: x.Id > self.Id, self.sharedData.BullyProcesses))
         processesLength = len(processes)
         if processesLength != 0:
             processes = BullyProcess.GetSortProcessList(processes)
@@ -127,35 +138,46 @@ class BullyProcess():
     def GetClockCommandHandler(self, dsMessage):
         return self.Clock
 
+    def KillCommandHandler(self, dsMessage):
+        self.kill()
+        if self.isCoordinator():
+            self.resetClocks()
+
+    def ResetClockCommandHandler(self, dsMessage):
+        self.Clock = self.DefaultClock
+
     # --------------------------------------------------------------------------------- Private Methods
 
+    def kill(self):
+        self.Status = BullyProcessStatus.Killed
+        self.sharedData.RemoveProcess(self.Id)
+        self.Dispose()
+
     def syncClock(self):
-        self.Clock = self.getCoordinatorClock()
-
-    def getCoordinator(self):
-        coordinatorProc = None
-        for index, process in enumerate(sharedData.BullyProcesses):
-            if self.CoordinatorProcessId == process.Id:
-                coordinatorProc = process
-                break
-
-        return coordinatorProc
+        if BullyProcess.GetCoordinator(self.sharedData):
+            self.Clock = self.getCoordinatorClock()
+        else:
+            self.Clock = self.DefaultClock
 
     def getCoordinatorClock(self):
-        process = self.getCoordinator()
+        process = BullyProcess.GetCoordinator(self.sharedData)
         return process.DSSocket.SendMessage(DSMessage(DSMessageType.GetClock))
 
     def isCoordinator(self):
         return self.Id == self.CoordinatorProcessId
 
     def updateClocks(self):
-        for process in sharedData.BullyProcesses:
+        for process in self.sharedData.BullyProcesses:
             process.DSSocket.SendMessage(DSMessage(DSMessageType.UpdateClock))
+
+    def resetClocks(self):
+        for process in self.sharedData.BullyProcesses:
+            process.DSSocket.SendMessage(DSMessage(DSMessageType.ResetClock))
 
     def getNextProcessID(self):
         NextProcessId = -1
 
-        processes = list(filter(lambda x: x.Id > self.Id, sharedData.BullyProcesses))
+        processes = list(filter(lambda x: x.Id > self.Id, self.sharedData.BullyProcesses))
         processesLength = len(processes)
         if processesLength != 0:
 
@@ -177,12 +199,35 @@ class BullyProcess():
 
     def notifyProcessesAboutNewCoordinator(self):
         self.CoordinatorProcessId = self.Id
-        for index, process in enumerate(sharedData.BullyProcesses):
+        for index, process in enumerate(self.sharedData.BullyProcesses):
             if process.Id != self.Id:
                 msg = DSMessage(DSMessageType.NewCoordinator, self.Id)
                 process.DSSocket.SendMessage(msg)
 
     # --------------------------------------------------------------------------------- static Methods
+
+    @staticmethod
+    def StartElection(sharedData):
+        
+        # Double-checked locking
+        # https://en.wikipedia.org/wiki/Double-checked_locking
+
+        if not BullyProcess.GetCoordinator(sharedData):
+            with sharedData.Lock:
+                if not BullyProcess.GetCoordinator(sharedData):
+                    processes = BullyProcess.GetSortProcessList(sharedData.BullyProcesses)
+                    firstProc = processes[0]
+                    firstProc.DSSocket.SendMessage(DSMessage(DSMessageType.StartElection))
+
+    @staticmethod
+    def GetCoordinator(sharedData):
+        coordinatorProc = None
+        for _, process in enumerate(sharedData.BullyProcesses):
+            if process.CoordinatorProcessId == process.Id:
+                coordinatorProc = process
+                break
+
+        return coordinatorProc
 
     @staticmethod
     def GetSortProcessList(processes):

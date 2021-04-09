@@ -52,5 +52,9 @@ class DSSocket:
             result = self.BullyProcess.GetClockCommandHandler(dsMessage)
         if dsMessage.Type == DSMessageType.SetTime:
             result = self.BullyProcess.SetTimeCommandHandler(dsMessage)
+        if dsMessage.Type == DSMessageType.Kill:
+            result = self.BullyProcess.KillCommandHandler(dsMessage)
+        if dsMessage.Type == DSMessageType.ResetClock:
+            result = self.BullyProcess.ResetClockCommandHandler(dsMessage)
 
         return result

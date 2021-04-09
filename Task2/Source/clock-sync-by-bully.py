@@ -16,10 +16,11 @@ def initialize(file):
     sharedData.Initialize(processes)
 
     for process in processes:
+        process.Init(sharedData)
         process.Run()
 
-    startElection()
-
+    BullyProcess.StartElection(sharedData)
+    
     return getCoordiatorID()
 
 
@@ -48,15 +49,6 @@ def getProcessesFromFile(file_name):
             bullyProcesses.append(process)
 
     return bullyProcesses
-
-
-def startElection():
-    processes = BullyProcess.GetSortProcessList(sharedData.BullyProcesses)
-
-    firstProc = processes[0]
-
-    msg = DSMessage(DSMessageType.StartElection)
-    firstProc.DSSocket.SendMessage(msg)
 
 
 def getCoordiatorID():
@@ -96,7 +88,6 @@ def show():
     click.echo(result)
 
 
-    
 @main.command()
 @click.argument('process_id')
 @click.argument('clock')
@@ -119,6 +110,18 @@ def clock():
     msg = DSMessage(DSMessageType.Clock)
     result = firstProc.DSSocket.SendMessage(msg)
     click.echo(result)
+
+
+@main.command()
+@click.argument('process_id')
+def kill(process_id):
+    processId = int(process_id)
+    process = sharedData.GetProcessByID(processId)
+    if process:
+        result = process.DSSocket.SendMessage(DSMessage(DSMessageType.Kill))
+        click.echo("The process is killed now. You can run the command 'list' or 'show' to see the current state of the processes.")
+    else:
+        click.echo("Process is not found")
 
 
 
