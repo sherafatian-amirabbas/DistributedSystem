@@ -9,7 +9,6 @@ class DSMessageType(enum.Enum):
     UpdateParticipation = 5
     List = 6
     Clock = 7
-    UpdateClock = 8
     GetClock = 9
     SetTime = 10
     ResetClock = 11

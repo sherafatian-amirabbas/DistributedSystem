@@ -131,7 +131,6 @@ def freeze(process_id):
     if process:
         process.DSSocket.SendMessage(DSMessage(DSMessageType.Freeze))
         click.echo("Process suspended. You can run the command 'list' or 'show' to see the current state of the processes.")
-        # click.echo(result)
     else:
         click.echo("Process is not found")
 
