@@ -123,7 +123,17 @@ def kill(process_id):
     else:
         click.echo("Process is not found")
 
-
+@main.command()
+@click.argument('process_id')
+def freeze(process_id):
+    processId = int(process_id)
+    process = sharedData.GetProcessByID(processId)
+    if process:
+        process.DSSocket.SendMessage(DSMessage(DSMessageType.Freeze))
+        click.echo("Process suspended. You can run the command 'list' or 'show' to see the current state of the processes.")
+        # click.echo(result)
+    else:
+        click.echo("Process is not found")
 
 if __name__ == '__main__':
     main()
