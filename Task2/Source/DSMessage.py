@@ -14,6 +14,8 @@ class DSMessageType(enum.Enum):
     SetTime = 10
     ResetClock = 11
     Kill = 12
+    Freeze = 13
+
 
 
 class DSMessage:

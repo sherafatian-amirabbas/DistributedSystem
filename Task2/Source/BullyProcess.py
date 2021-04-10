@@ -146,6 +146,16 @@ class BullyProcess():
     def ResetClockCommandHandler(self, dsMessage):
         self.Clock = self.DefaultClock
 
+    def FreezeCommandHandler(self, dsMessage):
+        self.Status = BullyProcessStatus.Suspended
+        self.Dispose()
+        self.timer.Cancel()
+        # change the status
+        # disposed
+        # cancel time
+
+
+
     # --------------------------------------------------------------------------------- Private Methods
 
     def kill(self):
@@ -203,6 +213,9 @@ class BullyProcess():
             if process.Id != self.Id:
                 msg = DSMessage(DSMessageType.NewCoordinator, self.Id)
                 process.DSSocket.SendMessage(msg)
+
+    def isSuspended(self):
+        return self.Status == BullyProcessStatus.Suspended
 
     # --------------------------------------------------------------------------------- static Methods
 
