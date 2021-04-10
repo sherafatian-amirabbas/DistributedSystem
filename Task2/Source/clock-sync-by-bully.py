@@ -95,6 +95,14 @@ def show():
         result += i.ToString() + "\n"
     click.echo(result)
 
+@main.command()
+def reload():
+    processes =sharedData.BullyProcesses
+    process=processes[0]
+    msg=DSMessage(DSMessageType.Reload)
+    result=process.DSSocket.SendMessage(msg)
+    click.echo('kaya')
+
 
     
 @main.command()
