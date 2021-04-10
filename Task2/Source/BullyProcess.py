@@ -45,7 +45,7 @@ class BullyProcess():
         inf = str(self.Id) + ", " + self.Name + "_" + str(self.ParticipationCounter) + ", " + self.Clock
         if self.isCoordinator():
             inf += " (Coordinator)"
-            
+
         if self.isSuspended():
             inf += " (Suspended)"
 
@@ -68,7 +68,6 @@ class BullyProcess():
     def clockSynchronization(self):
         if not self.isCoordinator():
             self.syncClock()
-
 
     # ---------------------------------------------------------------------------------------- Commands
 
@@ -153,7 +152,18 @@ class BullyProcess():
         if self.isCoordinator():
             BullyProcess.StartElection(self.sharedData)
 
+    def UnfreezeCommandHandler(self, dsMessage):
+        coordinator = BullyProcess.GetCoordinator(self.sharedData)
 
+        self.Clock = self.DefaultClock
+        self.Status = BullyProcessStatus.Run
+        self.timer.Restart()
+        self.DSSocket.Open()
+
+        if coordinator.Id < self.Id:
+            BullyProcess.StartElection(self.sharedData)
+        else:
+            self.updateClock()
 
     # --------------------------------------------------------------------------------- Private Methods
 
@@ -220,7 +230,7 @@ class BullyProcess():
 
     @staticmethod
     def StartElection(sharedData):
-        
+
         # Double-checked locking
         # https://en.wikipedia.org/wiki/Double-checked_locking
 

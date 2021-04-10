@@ -89,4 +89,7 @@ class DSSocket:
                 return msg
             result = self.BullyProcess.FreezeCommandHandler(dsMessage)
 
+        if dsMessage.Type == DSMessageType.Unfreeze:
+            result = self.BullyProcess.UnfreezeCommandHandler(dsMessage)
+
         return result
