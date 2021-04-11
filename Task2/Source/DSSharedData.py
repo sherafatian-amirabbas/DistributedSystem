@@ -3,9 +3,14 @@ class DSSharedData():
 
     def __init__(self):
         self.BullyProcesses = []
+        self.ReloadProcesses=[]
+        
 
     def Initialize(self, ListOfBullyProcesses):
         self.BullyProcesses = ListOfBullyProcesses
+    def ReloadProcess(self,listofprocesses):
+        self.ReloadProcesses=listofprocesses
+        
 
     def GetProcessByID(self, processId):
         result = None

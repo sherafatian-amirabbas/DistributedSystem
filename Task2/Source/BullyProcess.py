@@ -99,7 +99,37 @@ class BullyProcess():
 
         return desc
 
-        def ReloadCommandHandler(self,dsMessage):
+    def ReloadCommandHandler(self,dsMessage):
+        activeProcessesId=[process.Id for process in sharedData.BullyProcesses]
+        allProcesses=sharedData.ReloadProcesses
+        processofReloaded=[]
+        if len(activeProcessesId)==len(allProcesses):
+            return "all processes are in the list"
+        else:
+            for process in allProcesses:
+                if process.Id not in activeProcessesId:
+                    processofReloaded.append(process)
+
+        for incremental, process in enumerate(processofReloaded):
+            process.Run()
+            sharedData.BullyProcesses.append(process)
+            process.ParticipationCounter+=incremental
+            self.StartElectionCommandHandler(process)
+            for process in sharedData.BullyProcesses:
+                 process.ParticipationCounter+=1
+            
+        return "Processes are reloaded"
+
+                
+            
+            
+
+
+
+            
+
+
+
             
 
 

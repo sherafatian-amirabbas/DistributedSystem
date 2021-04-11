@@ -13,7 +13,9 @@ import time
 def initialize(file):
     processes = getProcessesFromFile(file)
 
+    
     sharedData.Initialize(processes)
+    
 
     for process in processes:
         process.Run()
@@ -25,6 +27,9 @@ def initialize(file):
 
 def getProcessesFromFile(file_name):
     bullyProcesses = []
+    reloadedProcess=[]
+    
+
 
     with open(file_name, "r") as file_object:
         lines = file_object.read().splitlines()
@@ -46,6 +51,9 @@ def getProcessesFromFile(file_name):
 
             process = BullyProcess(int(id), name, int(participation), clock)
             bullyProcesses.append(process)
+            reloadedProcess.append(process)
+
+    sharedData.ReloadProcess(reloadedProcess)
 
     return bullyProcesses
 
@@ -99,9 +107,13 @@ def show():
 def reload():
     processes =sharedData.BullyProcesses
     process=processes[0]
+    sharedData.BullyProcesses.pop()
+    sharedData.BullyProcesses.pop()
+    sharedData.BullyProcesses.pop()
+
     msg=DSMessage(DSMessageType.Reload)
     result=process.DSSocket.SendMessage(msg)
-    click.echo('kaya')
+    click.echo(result)
 
 
     
