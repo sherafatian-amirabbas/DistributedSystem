@@ -107,10 +107,6 @@ def show():
 def reload():
     processes =sharedData.BullyProcesses
     process=processes[0]
-    sharedData.BullyProcesses.pop()
-    sharedData.BullyProcesses.pop()
-    sharedData.BullyProcesses.pop()
-
     msg=DSMessage(DSMessageType.Reload)
     result=process.DSSocket.SendMessage(msg)
     click.echo(result)
