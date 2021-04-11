@@ -161,7 +161,7 @@ class BullyProcess():
         self.DSSocket.Open()
 
         if coordinator.Id < self.Id:
-            BullyProcess.StartElection(self.sharedData)
+            BullyProcess.SendStartElectionMessageToFirstProcess(self.sharedData)
         else:
             self.updateClock()
 
@@ -237,10 +237,16 @@ class BullyProcess():
         if not BullyProcess.GetCoordinator(sharedData):
             with sharedData.Lock:
                 if not BullyProcess.GetCoordinator(sharedData):
-                    processes = list(filter(lambda x: not x.isSuspended(), sharedData.BullyProcesses))
-                    processes = BullyProcess.GetSortProcessList(processes)
-                    firstProc = processes[0]
-                    firstProc.DSSocket.SendMessage(DSMessage(DSMessageType.StartElection))
+                    BullyProcess.SendStartElectionMessageToFirstProcess(sharedData)
+
+
+    @staticmethod
+    def SendStartElectionMessageToFirstProcess(sharedData):
+        processes = list(filter(lambda x: not x.isSuspended(), sharedData.BullyProcesses))
+        processes = BullyProcess.GetSortProcessList(processes)
+        firstProc = processes[0]
+        firstProc.DSSocket.SendMessage(DSMessage(DSMessageType.StartElection))
+
 
     @staticmethod
     def GetCoordinator(sharedData):
