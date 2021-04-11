@@ -169,6 +169,7 @@ class BullyProcess():
 
     def kill(self):
         self.Status = BullyProcessStatus.Killed
+        self.ParticipationCounter=0
         self.sharedData.RemoveProcess(self.Id)
         self.Dispose()
 
