@@ -12,7 +12,7 @@ class DSMessageType(enum.Enum):
     UpdateClock = 8
     GetClock = 9
     SetTime=10
-    Reload=11
+    Reload=15
 
 
 class DSMessage:
