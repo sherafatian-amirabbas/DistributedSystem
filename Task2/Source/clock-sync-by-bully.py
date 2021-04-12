@@ -67,6 +67,7 @@ def main():
 @main.command()
 @click.argument('process_id')
 def ping(process_id):
+    """This is an additional command to check the status of a specific process."""
     processId = int(process_id)
     process = sharedData.GetProcessByID(processId)
     if process != None:
@@ -79,6 +80,7 @@ def ping(process_id):
 @main.command()
 @click.argument('file')
 def init(file):
+    """This command will load the file, run the processes and start the first election."""
     initializeFromFile(file)
     BullyProcess.StartElectionFromFirstProcess(sharedData)
     startProcessTimers()
@@ -97,6 +99,7 @@ def list():
 
 @main.command()
 def show():
+    """This is an additional command which lists all the information for all the processes."""
     processes = BullyProcess.GetSortProcessList(sharedData.BullyProcesses)
     result = ""
     for i in processes:
