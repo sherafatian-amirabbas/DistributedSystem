@@ -1,5 +1,0 @@
-build/*
-__pycache__
-venv/*
-dist/*
-clock-sync-by-bully.spec
