@@ -6,7 +6,6 @@ class DSMessageType(enum.Enum):
     Nudge = 2
     StartElection = 3
     NewCoordinator = 4
-    UpdateParticipation = 5
     List = 6
     Clock = 7
     GetClock = 9

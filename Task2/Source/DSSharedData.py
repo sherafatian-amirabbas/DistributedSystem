@@ -6,12 +6,13 @@ class DSSharedData():
         self.BullyProcesses = []
         self.Lock = threading.Lock()
 
-    def Initialize(self, ListOfBullyProcesses):
-        self.BullyProcesses = ListOfBullyProcesses
+    def AddProcess(self, ListOfBullyProcesses):
+        for process in ListOfBullyProcesses:
+            self.BullyProcesses.append(process)
 
     def GetProcessByID(self, processId):
         result = None
-        processes = [p for p in self.BullyProcesses if p.Id == processId]
+        processes = list(filter(lambda x: x.Id == processId, self.BullyProcesses))
         if len(processes) != 0:
             result = processes[0]
 

@@ -10,24 +10,26 @@ import time
 
 # ------------------------------------------------------------------------------- private functions
 
-def initialize(file):
-    processes = getProcessesFromFile(file)
+InputFile = None
 
-    sharedData.Initialize(processes)
+def initializeFromFile(file):
+    global InputFile
+    InputFile = file
+    processes = getProcessesFromFile()
+    initializeFromProcesses(processes, False)
 
+
+def initializeFromProcesses(processes, startTimer):
+    sharedData.AddProcess(processes)
     for process in processes:
         process.Init(sharedData)
-        process.Run()
-
-    BullyProcess.StartElection(sharedData)
-    
-    return getCoordiatorID()
+        process.Run(startTimer)
 
 
-def getProcessesFromFile(file_name):
+def getProcessesFromFile():
     bullyProcesses = []
 
-    with open(file_name, "r") as file_object:
+    with open(InputFile, "r") as file_object:
         lines = file_object.read().splitlines()
 
         for _, line in enumerate(lines):
@@ -41,22 +43,21 @@ def getProcessesFromFile(file_name):
             nameAndParticipationStr = dataArray[1]
             nameAndParticipationArr = nameAndParticipationStr.split('_')
             name = nameAndParticipationArr[0]
-            participation = nameAndParticipationArr[1]
+            participation = None
 
             clock = dataArray[2]
 
-            process = BullyProcess(int(id), name, int(participation), clock)
+            process = BullyProcess(int(id), name, participation, clock)
             bullyProcesses.append(process)
 
     return bullyProcesses
 
 
-def getCoordiatorID():
-    return sharedData.BullyProcesses[0].CoordinatorProcessId
-
+def startProcessTimers():
+    for process in sharedData.BullyProcesses:
+        process.ResetTimer()
 
 # -------------------------------------------------------------------------------
-
 
 @shell(prompt='clock-sync-by-bully > ')
 def main():
@@ -64,10 +65,25 @@ def main():
 
 
 @main.command()
+@click.argument('process_id')
+def ping(process_id):
+    processId = int(process_id)
+    process = sharedData.GetProcessByID(processId)
+    if process != None:
+        result = process.DSSocket.SendMessage(DSMessage(DSMessageType.Ping))
+        click.echo(result)
+    else:
+        click.echo("ProcessId is not valid, the process wasn't found.")
+
+
+@main.command()
 @click.argument('file')
 def init(file):
-    coordinatorId = initialize(file)
-    click.echo("The Process with the Id: '" + str(coordinatorId) + "' is the Coordinator now.")
+    initializeFromFile(file)
+    BullyProcess.StartElectionFromFirstProcess(sharedData)
+    startProcessTimers()
+    coordinatorProcess = BullyProcess.GetCoordinator(sharedData)
+    click.echo("The Process with the Id: '" + str(coordinatorProcess.Id) + "' is the Coordinator now.")
 
 
 @main.command()
@@ -94,13 +110,13 @@ def show():
 def set_time(process_id, clock):
     processId = int(process_id)
     process = sharedData.GetProcessByID(processId)
-    if process:
+    if process != None:
         msg=DSMessage(DSMessageType.SetTime)
         msg.Argument = clock
         result = process.DSSocket.SendMessage(msg)
         click.echo(result)
     else:
-        click.echo("Process is not found please try again")
+        click.echo("ProcessId is not valid, the process wasn't found.")
 
 
 @main.command()
@@ -117,33 +133,61 @@ def clock():
 def kill(process_id):
     processId = int(process_id)
     process = sharedData.GetProcessByID(processId)
-    if process:
+    if process != None:
         result = process.DSSocket.SendMessage(DSMessage(DSMessageType.Kill))
-        click.echo("The process is killed now. You can run the command 'list' or 'show' to see the current state of the processes.")
+        if result == None:
+            click.echo("The process is killed now.")
+        else:
+            click.echo("The process is killed now - the process with ID '" + str(result) + "' started election.")
+
     else:
         click.echo("Process is not found")
+
 
 @main.command()
 @click.argument('process_id')
 def freeze(process_id):
     processId = int(process_id)
     process = sharedData.GetProcessByID(processId)
-    if process:
-        process.DSSocket.SendMessage(DSMessage(DSMessageType.Freeze))
-        click.echo("Process suspended. You can run the command 'list' or 'show' to see the current state of the processes.")
+    if process != None:
+        result = process.DSSocket.SendMessage(DSMessage(DSMessageType.Freeze))
+        click.echo(result)
     else:
         click.echo("Process is not found")
+
 
 @main.command()
 @click.argument('process_id')
 def unfreeze(process_id):
     processId = int(process_id)
     process = sharedData.GetProcessByID(processId)
-    if process:
-        process.DSSocket.SendMessage(DSMessage(DSMessageType.Unfreeze))
-        click.echo("Process suspended. You can run the command 'list' or 'show' to see the current state of the processes.")
+    if process != None:
+        result = process.DSSocket.SendMessage(DSMessage(DSMessageType.Unfreeze))
+        click.echo(result)
     else:
         click.echo("Process is not found")
+
+
+@main.command()
+def reload():
+    defaultProcesses = getProcessesFromFile()
+
+    newProcesses = []
+    for process in defaultProcesses:
+        existedProc = sharedData.GetProcessByID(process.Id)
+        if existedProc == None:
+            newProcesses.append(process)
+
+    if len(newProcesses) == 0:
+        click.echo("No new process(es) initialized")
+        return
+
+    initializeFromProcesses(newProcesses, True)
+    BullyProcess.StartElectionFromFirstProcess(sharedData)
+    coordinatorProcess = BullyProcess.GetCoordinator(sharedData)
+
+    click.echo("New process(es) initialized - the process with ID '" + str(coordinatorProcess.Id) + "' is the new coordinator.")
+
 
 if __name__ == '__main__':
     main()

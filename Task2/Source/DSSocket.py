@@ -33,63 +33,70 @@ class DSSocket:
         result = None
         msg = "The command is not available for Suspended processes"
 
+
         if dsMessage.Type == DSMessageType.Ping:
-            if self.BullyProcess.isSuspended():
-                return msg
             result = self.BullyProcess.PingCommandHandler(dsMessage)
+
 
         if dsMessage.Type == DSMessageType.Nudge:
             if self.BullyProcess.isSuspended():
                 return msg
             result = self.BullyProcess.NudgeCommandHandler(dsMessage)
 
+
         if dsMessage.Type == DSMessageType.StartElection:
             if self.BullyProcess.isSuspended():
                 return msg
             result = self.BullyProcess.StartElectionCommandHandler(dsMessage)
+
 
         if dsMessage.Type == DSMessageType.NewCoordinator:
             if self.BullyProcess.isSuspended():
                 return msg
             result = self.BullyProcess.NewCoordinatorCommandHandler(dsMessage)
 
-        if dsMessage.Type == DSMessageType.UpdateParticipation:
-            if self.BullyProcess.isSuspended():
-                return msg
-            result = self.BullyProcess.UpdateParticipationCommandHandler(dsMessage)
 
         if dsMessage.Type == DSMessageType.List:
             result = self.BullyProcess.ListCommandHandler(dsMessage)
 
+
         if dsMessage.Type == DSMessageType.Clock:
             result = self.BullyProcess.ClockCommandHandler(dsMessage)
+
 
         if dsMessage.Type == DSMessageType.GetClock:
             if self.BullyProcess.isSuspended():
                 return msg
             result = self.BullyProcess.GetClockCommandHandler(dsMessage)
 
+
         if dsMessage.Type == DSMessageType.SetTime:
             if self.BullyProcess.isSuspended():
                 return msg
             result = self.BullyProcess.SetTimeCommandHandler(dsMessage)
 
+
         if dsMessage.Type == DSMessageType.Kill:
             if self.BullyProcess.isSuspended():
-                return msg
+                raise Exception(msg)
             result = self.BullyProcess.KillCommandHandler(dsMessage)
+
 
         if dsMessage.Type == DSMessageType.ResetClock:
             if self.BullyProcess.isSuspended():
                 return msg
             result = self.BullyProcess.ResetClockCommandHandler(dsMessage)
 
+
         if dsMessage.Type == DSMessageType.Freeze:
             if self.BullyProcess.isSuspended():
                 return msg
             result = self.BullyProcess.FreezeCommandHandler(dsMessage)
 
+
         if dsMessage.Type == DSMessageType.Unfreeze:
+            if self.BullyProcess.isRun():
+                return "The command is not available for Running processes"
             result = self.BullyProcess.UnfreezeCommandHandler(dsMessage)
 
         return result
