@@ -12,14 +12,15 @@ class DSProcessStatus(enum.Enum):
 
 
 class DSProcess():
-    def __init__(self, id):
+    def __init__(self, id, isCoordinator):
         self.Id = id
-        self.Status = DSProcessStatus.Stopped
+        self.IsCoordinator = isCoordinator
+        self.DSStatus = DSProcessStatus.Stopped
         self.DSSocket = None
         self.timer = DSTimer(1, self.timer_elapsed)
 
     def Run(self, startTimer = True):
-        self.Status = DSProcessStatus.Running
+        self.DSStatus = DSProcessStatus.Running
 
         port = portManager.GetANewPort()
         socketAddress = DSSocketAddress(port)
@@ -30,7 +31,7 @@ class DSProcess():
             self.timer.Start()
 
     def Dispose(self):
-        self.Status = DSProcessStatus.Stopped
+        self.DSStatus = DSProcessStatus.Stopped
         self.DSSocket.Close()
         self.timer.Cancel()
 
@@ -42,7 +43,7 @@ class DSProcess():
     # ---------------------------------------------------------------------------------------- Commands
 
     def PingCommandHandler(self, dsMessage):
-        if self.Status == DSProcessStatus.Stopped:
+        if self.DSStatus == DSProcessStatus.Stopped:
             return "I am stopped :( , my ID is: '" + str(self.Id) + "'"
-        elif self.Status == DSProcessStatus.Running:
+        elif self.DSStatus == DSProcessStatus.Running:
             return "Hey... I'm running and my ID is: '" + str(self.Id) + "'"

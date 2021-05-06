@@ -4,10 +4,23 @@ class DSData():
 
     def __init__(self):
         self.DSProcesses = []
+        self.DataValueHistory = []
 
-    def AddProcess(self, ListOfDSProcesses):
+    def Initialize(self, ListOfDSProcesses, dataValueHistory):
+        self.DSProcesses = ListOfDSProcesses
+        self.DataValueHistory = dataValueHistory
+
+    def AddProcesses(self, ListOfDSProcesses):
         for process in ListOfDSProcesses:
             self.DSProcesses.append(process)
+
+    def RemoveProcess(self, processId):
+        processes = []
+        for p in self.DSProcesses:
+            if p.Id != processId:
+                processes.append(p)
+
+        self.DSProcesses = processes
 
     def GetProcessByID(self, processId):
         result = None
@@ -17,10 +30,16 @@ class DSData():
 
         return result
 
-    def RemoveProcess(self, processId):
-        processes = []
-        for p in self.DSProcesses:
-            if p.Id != processId:
-                processes.append(p)
+    def GetCoordinator(self):
+        result = None
+        processes = list(filter(lambda x: x.IsCoordinator == True, self.DSProcesses))
+        if len(processes) != 0:
+            result = processes[0]
 
-        self.DSProcesses = processes
+        return result
+
+    def AddHistory(self, value):
+        self.DataValueHistory.append(value)
+
+
+dsData = DSData()
