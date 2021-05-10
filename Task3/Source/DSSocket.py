@@ -30,9 +30,46 @@ class DSSocket:
         self.Status = DSSocketStatus.Closed
 
     def SendMessage(self, dsMessage):
+
+        if self.Status == DSSocketStatus.Closed:
+            return 'socket is not open'
+
         result = None
 
         if dsMessage.Type == DSMessageType.Ping:
             result = self.DSProcess.PingCommandHandler(dsMessage)
+
+
+        elif dsMessage.Type == DSMessageType.SetNewValue:
+            result = self.DSProcess.SetNewValueCommandHandler(dsMessage)
+
+        elif dsMessage.Type == DSMessageType.InitRequest:
+            result = self.DSProcess.InitRequestCommandHandler(dsMessage)
+
+        elif dsMessage.Type == DSMessageType.VoteRequest:
+            result = self.DSProcess.VoteRequestCommandHandler(dsMessage)
+
+        elif dsMessage.Type == DSMessageType.VoteCommit:
+            result = self.DSProcess.VoteCommitCommandHandler(dsMessage)
+
+        elif dsMessage.Type == DSMessageType.VoteAbort:
+            result = self.DSProcess.VoteAbortCommandHandler(dsMessage)
+
+        elif dsMessage.Type == DSMessageType.GlobalCommit:
+            result = self.DSProcess.GlobalCommitCommandHandler(dsMessage)
+
+        elif dsMessage.Type == DSMessageType.GlobalAbort:
+            result = self.DSProcess.GlobalAbortCommandHandler(dsMessage)
+
+
+        elif dsMessage.Type == DSMessageType.RollbackValues:
+            result = self.DSProcess.RollbackValuesCommandHandler(dsMessage)
+
+
+        elif dsMessage.Type == DSMessageType.SyncNewProcess:
+            result = self.DSProcess.SyncNewProcessCommandHandler(dsMessage)
+
+        elif dsMessage.Type == DSMessageType.GetData:
+            result = self.DSProcess.GetDataCommandHandler(dsMessage)
 
         return result

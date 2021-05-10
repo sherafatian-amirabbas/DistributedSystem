@@ -1,14 +1,12 @@
 import threading
 
-class DSData():
+class DSProcessManager():
 
     def __init__(self):
         self.DSProcesses = []
-        self.DataValueHistory = []
 
-    def Initialize(self, ListOfDSProcesses, dataValueHistory):
+    def Initialize(self, ListOfDSProcesses):
         self.DSProcesses = ListOfDSProcesses
-        self.DataValueHistory = dataValueHistory
 
     def AddProcesses(self, ListOfDSProcesses):
         for process in ListOfDSProcesses:
@@ -19,7 +17,6 @@ class DSData():
         for p in self.DSProcesses:
             if p.Id != processId:
                 processes.append(p)
-
         self.DSProcesses = processes
 
     def GetProcessByID(self, processId):
@@ -27,6 +24,21 @@ class DSData():
         processes = list(filter(lambda x: x.Id == processId, self.DSProcesses))
         if len(processes) != 0:
             result = processes[0]
+        return result
+
+    def setAnotherProcessAsCoordinator(self):
+        self.DSProcesses[0].IsCoordinator = True
+
+    def getProcessesCount(self):
+        return len(self.DSProcesses)
+
+    def GetProcessDescriptions(self):
+        result = []
+        for p in self.DSProcesses:
+            str = p.Id
+            if p.IsCoordinator:
+                str = str + ' (coordinator)'
+            result.append(str)
 
         return result
 
@@ -35,11 +47,11 @@ class DSData():
         processes = list(filter(lambda x: x.IsCoordinator == True, self.DSProcesses))
         if len(processes) != 0:
             result = processes[0]
-
         return result
 
-    def AddHistory(self, value):
-        self.DataValueHistory.append(value)
+    def GetParticipants(self):
+        processes = list(filter(lambda x: x.IsCoordinator == False, self.DSProcesses))
+        return processes
 
 
-dsData = DSData()
+dsProcessManager = DSProcessManager()
