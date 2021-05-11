@@ -72,4 +72,7 @@ class DSSocket:
         elif dsMessage.Type == DSMessageType.GetData:
             result = self.DSProcess.GetDataCommandHandler(dsMessage)
 
+        elif dsMessage.Type == DSMessageType.ArbitraryFailure:
+            result = self.DSProcess.ArbitraryFailureCommandHandler(dsMessage)
+
         return result

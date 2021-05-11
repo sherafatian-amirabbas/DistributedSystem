@@ -14,7 +14,7 @@ class DSParticipantOperationStatus(enum.Enum):
 
 GlobalParticipantOperationID = 0
 class DSParticipantOperation:
-    def __init__(self, coordinatorTransactionId, currentData, onCommitHandler, onAbortHandler):
+    def __init__(self, coordinatorTransactionId, currentData, flipParticipantAcknowledge, onCommitHandler, onAbortHandler):
         self.Id = self.getNewID() # by defining Id, we can later follow up each operation
         self.CoordinatorTransactionId = coordinatorTransactionId
         self.State = DSParticipantOperationStatus.INIT
@@ -23,7 +23,10 @@ class DSParticipantOperation:
         self.onAbortHandler = onAbortHandler
         self.Operation = None # by encapsulating the operation, we can log the whole object as a state together with the operation
         self.TempValue = None # to clone and keep everything temporarily until it's being committed
+        self.flipParticipantAcknowledge = flipParticipantAcknowledge
 
+    def SetFlipParticipantAcknowledge(self, value):
+        self.flipParticipantAcknowledge = value
 
     def Operate(self, dsMessageAsOperation):
         self.Operation = dsMessageAsOperation
@@ -52,26 +55,33 @@ class DSParticipantOperation:
         messageType = None
         state = None
         
-        try:
-            if self.Operation.Type == DSMessageType.SetNewValue:
-                self.temporarilySetNewValueHandler()
-                messageType = DSMessageType.VoteCommit
-                state = DSParticipantOperationStatus.READY
+        if self.Operation.Type == DSMessageType.SetNewValue:
+            self.temporarilySetNewValueHandler()
+            messageType = DSMessageType.VoteCommit
+            state = DSParticipantOperationStatus.READY
 
-            elif self.Operation.Type == DSMessageType.RollbackValues:
-                self.temporarilyRollbackValuesHandler()
-                messageType = DSMessageType.VoteCommit
-                state = DSParticipantOperationStatus.READY
+        elif self.Operation.Type == DSMessageType.RollbackValues:
+            self.temporarilyRollbackValuesHandler()
+            messageType = DSMessageType.VoteCommit
+            state = DSParticipantOperationStatus.READY
 
-        except:
-            messageType = DSMessageType.VoteAbort
-            state = DSParticipantOperationStatus.ABORT
+
+        if self.flipParticipantAcknowledge == True:
+            if messageType == DSMessageType.VoteCommit:
+                messageType = DSMessageType.VoteAbort
+            else:
+                messageType = DSMessageType.VoteCommit
+
+
+        if messageType == DSMessageType.VoteCommit:
+            self.State = state
+        else:
+            self.Abort()
+            
 
         coordinatorProcess = dsProcessManager.GetCoordinator()
         coordinatorProcess.DSSocket.SendMessage(DSMessage(messageType, self.CoordinatorTransactionId))
         
-        self.State = state
-
 
     def temporarilySetNewValueHandler(self):
         self.TempValue = self.Operation.Argument # value to be added is being kept temporarily

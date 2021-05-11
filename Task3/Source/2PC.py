@@ -114,6 +114,13 @@ def removeProcess(pid):
     return 'the process with the id \'' + process.Id + '\' is removed' + str
 
 
+def applyArbitraryFailure(pid, timeout):
+    process = dsProcessManager.GetProcessByID(pid)
+    if process == None:
+        return 'the process id is not valid'    
+    return process.DSSocket.SendMessage(DSMessage(DSMessageType.ArbitraryFailure, int(timeout)))
+
+
 def getProcessData(pid):
     process = dsProcessManager.GetProcessByID(pid)
     if process == None:
@@ -166,6 +173,12 @@ def remove(pid):
     result = removeProcess(pid)
     click.echo(result)
 
+@main.command()
+@click.argument('pid')
+@click.argument('timeout')
+def arbitrary_failure(pid, timeout):
+    result = applyArbitraryFailure(pid, timeout)
+    click.echo(result)
 
 @main.command()
 @click.argument('pid')

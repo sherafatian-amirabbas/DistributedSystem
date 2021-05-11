@@ -7,6 +7,7 @@ class DSMessageType(enum.Enum):
     RollbackValues = 20
     SyncNewProcess = 30
     GetData = 40
+    ArbitraryFailure = 50
 
     InitRequest = 1000
     VoteRequest = 2000

@@ -7,6 +7,7 @@ from DSProcessManager import dsProcessManager
 from DSCoordinatorTransaction import DSCoordinatorTransaction
 from DSParticipantOperation import DSParticipantOperation
 from DSTimer import DSTimer
+from DSTimeout import DSTimeout
 
 
 class DSProcessStatus(enum.Enum):
@@ -24,6 +25,7 @@ class DSProcess():
         self.CurrentCoordinatorTransaction = None
         self.CurrentParticipantOperation = None
         self.CoordinatorTransactionLog = []
+        self.flipParticipantAcknowledge = False
         self.timer = DSTimer(1, self.timer_elapsed)
 
     def Initialize(self, data):
@@ -58,6 +60,29 @@ class DSProcess():
         elif self.DSStatus == DSProcessStatus.Running:
             return "Hey... I'm running and my ID is: '" + str(self.Id) + "'"
 
+    def GetDataCommandHandler(self, dsMessage):
+        print(self.flipParticipantAcknowledge)
+        return ", ".join(self.Data)
+
+    def ArbitraryFailureCommandHandler(self, dsMessage):
+        self.toggleFlipParticipantAcknowledge()
+
+        timeout = dsMessage.Argument
+        dsTimeout = DSTimeout(timeout)
+        dsTimeout.Run(self.toggleFlipParticipantAcknowledge)
+
+        return str(timeout) + ' seconds of arbitrary failure applied for the process ' + self.Id
+
+    # ------------- private methods
+
+    def toggleFlipParticipantAcknowledge(self):
+        self.flipParticipantAcknowledge = not self.flipParticipantAcknowledge
+        if self.CurrentParticipantOperation != None:
+            self.CurrentParticipantOperation.SetFlipParticipantAcknowledge(self.CurrentParticipantOperation)
+
+        if self.flipParticipantAcknowledge == False:
+            print('process ' + self.Id + ' is back from arbitrary failure')
+
     # ------------------------------------- coordinator-side command handlers
 
     def SetNewValueCommandHandler(self, dsMessage):
@@ -77,9 +102,6 @@ class DSProcess():
     def SyncNewProcessCommandHandler(self, dsMessage):
         newProcess = dsMessage.Argument
         newProcess.Initialize(self.Data.copy())
-
-    def GetDataCommandHandler(self, dsMessage):
-        return ", ".join(self.Data)
 
     # ------------- private methods
 
@@ -110,7 +132,7 @@ class DSProcess():
     # ------------------------------------- participant-side command handlers
 
     def InitRequestCommandHandler(self, dsMessage):
-        self.CurrentParticipantOperation = DSParticipantOperation(dsMessage.Argument, self.Data, self.onOperationCommitHandler, self.onOperationAbortHandler)
+        self.CurrentParticipantOperation = DSParticipantOperation(dsMessage.Argument, self.Data, self.flipParticipantAcknowledge, self.onOperationCommitHandler, self.onOperationAbortHandler)
 
     def VoteRequestCommandHandler(self, dsMessage):
         if self.CurrentParticipantOperation != None and self.CurrentParticipantOperation.CoordinatorTransactionId == dsMessage.Tag:
