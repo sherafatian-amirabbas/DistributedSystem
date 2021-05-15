@@ -1,4 +1,3 @@
-from typing import get_type_hints
 from DSTimer import DSTimer
 
 class DSTimeout:
@@ -7,6 +6,9 @@ class DSTimeout:
         self.handler = None
         self.timer = DSTimer(1, self.timer_elapsed)
         self.passedSeconds = 0
+
+    def Reset(self):
+        self.Restart()
 
     def Run(self, handler):
         self.handler = handler

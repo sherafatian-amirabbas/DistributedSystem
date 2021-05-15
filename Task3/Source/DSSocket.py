@@ -1,6 +1,7 @@
 import enum
 
 from DSMessage import DSMessageType
+from DSBlocker import DSBlocker
 
 
 class DSSocketStatus(enum.Enum):
@@ -22,6 +23,7 @@ class DSSocket:
         self.SocketAddress = dsSocketAddress
         self.DSProcess = dsProcess
         self.Status = DSSocketStatus.Closed
+        self.DSBlocker = DSBlocker(self.unblockerHander)
 
     def Open(self):
         self.Status = DSSocketStatus.Open
@@ -33,6 +35,14 @@ class DSSocket:
 
         if self.Status == DSSocketStatus.Closed:
             return 'socket is not open'
+
+        if self.DSProcess.timeFailure == True:
+            val = self.DSBlocker.Block(dsMessage.Timeout)
+            # if we get val as 0, means that the process is back from the time failure meaning that
+            # we can proceed. But if  we get 1, meants that we reached the timeout and process is still
+            # unavailable, so wen shouldn't proceed
+            if val == 1:
+                return 'timeout'
 
         result = None
 
@@ -75,4 +85,16 @@ class DSSocket:
         elif dsMessage.Type == DSMessageType.ArbitraryFailure:
             result = self.DSProcess.ArbitraryFailureCommandHandler(dsMessage)
 
+        elif dsMessage.Type == DSMessageType.TimeFailure:
+            result = self.DSProcess.TimeFailureCommandHandler(dsMessage)
+
+        elif dsMessage.Type == DSMessageType.GetParticipantState:
+            result = self.DSProcess.GetParticipantStateCommandHandler(dsMessage)
+
+
         return result
+
+    # -------------------------- private methods
+
+    def unblockerHander(self):
+        return not self.DSProcess.timeFailure

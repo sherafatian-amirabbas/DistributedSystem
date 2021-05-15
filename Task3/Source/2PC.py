@@ -67,7 +67,10 @@ def setNewValue(value):
     if coordinator == None:
         return 'coordinator is not available'
 
-    return coordinator.DSSocket.SendMessage(DSMessage(DSMessageType.SetNewValue, value))
+    val = coordinator.DSSocket.SendMessage(DSMessage(DSMessageType.SetNewValue, value))
+    if val == 'timeout':
+        val = 'timeout: coordinator is not responding'
+    return val
 
 
 def rollbackFromPosition(position):
@@ -75,7 +78,10 @@ def rollbackFromPosition(position):
     if coordinator == None:
         return 'coordinator is not available'
 
-    return coordinator.DSSocket.SendMessage(DSMessage(DSMessageType.RollbackValues, position))
+    val = coordinator.DSSocket.SendMessage(DSMessage(DSMessageType.RollbackValues, position))
+    if val == 'timeout':
+        val = 'timeout: coordinator is not responding'
+    return val
 
 
 def addProcess(pid):
@@ -88,7 +94,10 @@ def addProcess(pid):
         return 'the process id is duplicate'
 
     newProcess = DSProcess(pid, False)
-    coordinator.DSSocket.SendMessage(DSMessage(DSMessageType.SyncNewProcess, newProcess))
+    val = coordinator.DSSocket.SendMessage(DSMessage(DSMessageType.SyncNewProcess, newProcess))
+    if val == 'timeout':
+        return 'timeout: coordinator is not responding'
+    
     newProcess.Run()
     dsProcessManager.AddProcesses([newProcess])
     dataStr = newProcess.DSSocket.SendMessage(DSMessage(DSMessageType.GetData))
@@ -114,18 +123,37 @@ def removeProcess(pid):
     return 'the process with the id \'' + process.Id + '\' is removed' + str
 
 
+def applyTimeFailure(pid, timeout):
+    process = dsProcessManager.GetProcessByID(pid)
+    if process == None:
+        return 'the process id is not valid'    
+
+    val = process.DSSocket.SendMessage(DSMessage(DSMessageType.TimeFailure, int(timeout)))
+    if val == 'timeout':
+        val = 'timeout: the process is not responding'
+    return val
+
+
 def applyArbitraryFailure(pid, timeout):
     process = dsProcessManager.GetProcessByID(pid)
     if process == None:
         return 'the process id is not valid'    
-    return process.DSSocket.SendMessage(DSMessage(DSMessageType.ArbitraryFailure, int(timeout)))
+
+    val = process.DSSocket.SendMessage(DSMessage(DSMessageType.ArbitraryFailure, int(timeout)))
+    if val == 'timeout':
+        val = 'timeout: the process is not responding'
+    return val
 
 
 def getProcessData(pid):
     process = dsProcessManager.GetProcessByID(pid)
     if process == None:
         return 'the process id is not valid'
-    return process.DSSocket.SendMessage(DSMessage(DSMessageType.GetData))
+
+    val =  process.DSSocket.SendMessage(DSMessage(DSMessageType.GetData))
+    if val == 'timeout':
+        val = 'timeout: the process is not responding'
+    return val
 
 
 def getProcesses():
@@ -173,12 +201,22 @@ def remove(pid):
     result = removeProcess(pid)
     click.echo(result)
 
+
+@main.command()
+@click.argument('pid')
+@click.argument('timeout')
+def time_failure(pid, timeout):
+    result = applyTimeFailure(pid, timeout)
+    click.echo(result)
+
+
 @main.command()
 @click.argument('pid')
 @click.argument('timeout')
 def arbitrary_failure(pid, timeout):
     result = applyArbitraryFailure(pid, timeout)
     click.echo(result)
+
 
 @main.command()
 @click.argument('pid')

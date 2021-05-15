@@ -25,7 +25,10 @@ class DSProcess():
         self.CurrentCoordinatorTransaction = None
         self.CurrentParticipantOperation = None
         self.CoordinatorTransactionLog = []
+        self.OperationTransactionLog = []
         self.flipParticipantAcknowledge = False
+        self.timeFailure = False
+        self.timeFailureTimeout = 0
         self.timer = DSTimer(1, self.timer_elapsed)
 
     def Initialize(self, data):
@@ -50,6 +53,14 @@ class DSProcess():
     # ---------------------------------------------------------------------------------------- handlers
 
     def timer_elapsed(self):
+
+        if self.timeFailure == True:
+            self.timeFailureTimeout -= 1
+            if self.timeFailureTimeout <= 0:
+                self.timeFailure = False
+                self.timeFailureTimeout = 0
+                print('process ' + self.Id + ' is back from time failure')
+
         self.timer.Restart()
 
     # ---------------------------------------------------------------------------------------- Commands
@@ -61,8 +72,7 @@ class DSProcess():
             return "Hey... I'm running and my ID is: '" + str(self.Id) + "'"
 
     def GetDataCommandHandler(self, dsMessage):
-        print(self.flipParticipantAcknowledge)
-        return ", ".join(self.Data)
+        return  "[" + ", ".join(self.Data) + "]"
 
     def ArbitraryFailureCommandHandler(self, dsMessage):
         self.toggleFlipParticipantAcknowledge()
@@ -72,6 +82,12 @@ class DSProcess():
         dsTimeout.Run(self.toggleFlipParticipantAcknowledge)
 
         return str(timeout) + ' seconds of arbitrary failure applied for the process ' + self.Id
+
+    def TimeFailureCommandHandler(self, dsMessage):
+        if dsMessage.Argument > 0:
+            self.timeFailureTimeout = dsMessage.Argument
+            self.timeFailure = True
+            return 'timeFailure applied'
 
     # ------------- private methods
 
@@ -107,8 +123,15 @@ class DSProcess():
 
     def HandleOperation(self, dsMessage):
         self.CurrentCoordinatorTransaction = DSCoordinatorTransaction(self.onTransactionCommitHandler, self.onTransactionAbortHandler)
-        self.CurrentCoordinatorTransaction.Open()
-        self.CurrentCoordinatorTransaction.Operate(dsMessage)
+
+        (err, pid) = self.CurrentCoordinatorTransaction.Open()
+        if err == 'timeout':
+            return 'the operation aborted since the process with the id \'' + pid + '\' is not responding'
+
+        (err, pid) = self.CurrentCoordinatorTransaction.Operate(dsMessage)
+        if err == 'timeout':
+            return 'the operation aborted since the process with the id \'' + pid + '\' is not responding'
+
         return ", ".join(self.Data)
 
     def onTransactionCommitHandler(self, operation):
@@ -120,7 +143,6 @@ class DSProcess():
 
     def onEndTransaction(self):
         self.CoordinatorTransactionLog.append(self.CurrentCoordinatorTransaction)
-        self.CurrentCoordinatorTransaction = None
 
     def applyChangesInCoordinatorData(self, operation):
         if operation.Type == DSMessageType.SetNewValue:
@@ -132,7 +154,7 @@ class DSProcess():
     # ------------------------------------- participant-side command handlers
 
     def InitRequestCommandHandler(self, dsMessage):
-        self.CurrentParticipantOperation = DSParticipantOperation(dsMessage.Argument, self.Data, self.flipParticipantAcknowledge, self.onOperationCommitHandler, self.onOperationAbortHandler)
+        self.CurrentParticipantOperation = DSParticipantOperation(self, dsMessage.Argument, self.Data, self.flipParticipantAcknowledge, self.onOperationCommitHandler, self.onOperationAbortHandler)
 
     def VoteRequestCommandHandler(self, dsMessage):
         if self.CurrentParticipantOperation != None and self.CurrentParticipantOperation.CoordinatorTransactionId == dsMessage.Tag:
@@ -146,6 +168,16 @@ class DSProcess():
         if self.CurrentParticipantOperation != None and self.CurrentParticipantOperation.CoordinatorTransactionId == dsMessage.Argument:
             self.CurrentParticipantOperation.Abort()
 
+    def GetParticipantStateCommandHandler(self, dsMessage):
+        operation = self.CurrentParticipantOperation
+        if operation == None:
+            coordinatorTransactionId = dsMessage.Argument
+            for o in self.OperationTransactionLog:
+                if o.CoordinatorTransactionId == coordinatorTransactionId:
+                    operation = o
+                    break
+        return operation.State
+
     # ------------- private methods
 
     def onOperationCommitHandler(self):
@@ -155,5 +187,4 @@ class DSProcess():
         self.onEndOperation()
 
     def onEndOperation(self):
-        self.CoordinatorTransactionLog.append(self.CurrentParticipantOperation)
-        self.CurrentParticipantOperation = None
+        self.OperationTransactionLog.append(self.CurrentParticipantOperation)

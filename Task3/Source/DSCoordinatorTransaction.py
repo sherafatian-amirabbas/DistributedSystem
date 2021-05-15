@@ -26,18 +26,23 @@ class DSCoordinatorTransaction:
 
     def Open(self):
         self.State = DSCoordinatorTransactionStatus.INIT
-        self.notifyProcessesAboutANewOperation()
+        return self.notifyProcessesAboutANewOperation()
 
 
     def Operate(self, dsMessage):
         self.State = DSCoordinatorTransactionStatus.WAIT
         self.Operation = dsMessage
-        self.sendVoteRequest()
+        (err, pid) = self.sendVoteRequest()
+        if err == 'timeout':
+            self.Abort() # in the case of timeout, we send global abort
+            return (err, pid)
+        else:
+            return ('', 0)
 
 
     def HandleAcknowledge(self, IsVoteCommit):
         if IsVoteCommit == True:
-            self.NumberOfProcessesWithVoteCommit = self.NumberOfProcessesWithVoteCommit + 1
+            self.NumberOfProcessesWithVoteCommit += 1
             if self.NumberOfProcessesWithVoteCommit == len(self.ProcessesVoteRequestIsSentTo):
                 self.Commit()
         else:
@@ -65,15 +70,25 @@ class DSCoordinatorTransaction:
 
     def notifyProcessesAboutANewOperation(self):
         processes = dsProcessManager.GetParticipants()
+        val = ('', '')
         for p in processes:
-            p.DSSocket.SendMessage(DSMessage(DSMessageType.InitRequest, self.Id)) # by passing the Id of the transactin we can follow up the transaction if needed
+            res = p.DSSocket.SendMessage(DSMessage(DSMessageType.InitRequest, self.Id)) # by passing the Id of the transactin we can follow up the transaction if needed
+            if res == 'timeout':
+                val = ('timeout', p.Id)
+                break
+        return val
 
 
     def sendVoteRequest(self):
         processes = dsProcessManager.GetParticipants()
         self.ProcessesVoteRequestIsSentTo = processes
+        val = ('', '')
         for p in processes:
-            p.DSSocket.SendMessage(DSMessage(DSMessageType.VoteRequest, self.Operation, self.Id))
+            res = p.DSSocket.SendMessage(DSMessage(DSMessageType.VoteRequest, self.Operation, self.Id))
+            if res == 'timeout':
+                val = ('timeout', p.Id)
+                break
+        return val
 
 
     def sendGlobalCommit(self):
