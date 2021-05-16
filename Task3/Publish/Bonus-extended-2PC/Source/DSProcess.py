@@ -115,6 +115,10 @@ class DSProcess():
         if self.CurrentCoordinatorTransaction != None and self.CurrentCoordinatorTransaction.Id == dsMessage.Argument:
             self.CurrentCoordinatorTransaction.HandleAcknowledge(False)
 
+    def PreCommitAcknowledgeCommandHandler(self, dsMessage):
+        if self.CurrentCoordinatorTransaction != None and self.CurrentCoordinatorTransaction.Id == dsMessage.Argument:
+            self.CurrentCoordinatorTransaction.HandlePreCommitAcknowledge()
+
     def SyncNewProcessCommandHandler(self, dsMessage):
         newProcess = dsMessage.Argument
         newProcess.Initialize(self.Data.copy())
@@ -160,6 +164,10 @@ class DSProcess():
         if self.CurrentParticipantOperation != None and self.CurrentParticipantOperation.CoordinatorTransactionId == dsMessage.Tag:
             self.CurrentParticipantOperation.Operate(dsMessage.Argument) # dsMessage.Argument containing a dsMessage determining an operation
 
+    def PreCommitCommandHandler(self, dsMessage):
+        if self.CurrentParticipantOperation != None and self.CurrentParticipantOperation.CoordinatorTransactionId == dsMessage.Argument:
+            self.CurrentParticipantOperation.PreCommit()
+            
     def GlobalCommitCommandHandler(self, dsMessage):
         if self.CurrentParticipantOperation != None and self.CurrentParticipantOperation.CoordinatorTransactionId == dsMessage.Argument:
             self.CurrentParticipantOperation.Commit()

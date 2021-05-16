@@ -9,6 +9,7 @@ class DSCoordinatorTransactionStatus(enum.Enum):
     INIT = 1
     WAIT = 10
     ABORT = 20
+    PRECOMMIT = 25
     COMMIT = 30
 
 
@@ -22,6 +23,7 @@ class DSCoordinatorTransaction:
         self.Operation = None # by encapsulating the operation, we can log the whole transaction object as a state together with the operation
         self.ProcessesVoteRequestIsSentTo = []
         self.NumberOfProcessesWithVoteCommit = 0
+        self.NumberOfProcessesWithPreCommitAcknowledge = 0
 
 
     def Open(self):
@@ -44,9 +46,19 @@ class DSCoordinatorTransaction:
         if IsVoteCommit == True:
             self.NumberOfProcessesWithVoteCommit += 1
             if self.NumberOfProcessesWithVoteCommit == len(self.ProcessesVoteRequestIsSentTo):
-                self.Commit()
+                self.PreCommit()
         else:
             self.Abort()
+
+
+    def HandlePreCommitAcknowledge(self):
+        pass
+
+
+    def PreCommit(self):
+        self.State = DSCoordinatorTransactionStatus.PRECOMMIT
+        self.sendPreCommit()
+        self.Commit()
 
 
     def Commit(self):
@@ -89,6 +101,12 @@ class DSCoordinatorTransaction:
                 val = ('timeout', p.Id)
                 break
         return val
+
+
+    def sendPreCommit(self):
+        processes = dsProcessManager.GetParticipants()
+        for p in processes:
+            p.DSSocket.SendMessage(DSMessage(DSMessageType.PreCommit, self.Id))
 
 
     def sendGlobalCommit(self):

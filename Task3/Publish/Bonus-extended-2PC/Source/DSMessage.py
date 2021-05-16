@@ -15,6 +15,8 @@ class DSMessageType(enum.Enum):
     VoteRequest = 2000
     VoteCommit = 3000
     VoteAbort = 4000
+    PreCommit = 3400
+    PreCommitAcknowledge = 3800
     GlobalCommit = 5000
     GlobalAbort = 6000
 

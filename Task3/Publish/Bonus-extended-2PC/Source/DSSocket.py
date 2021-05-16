@@ -65,6 +65,12 @@ class DSSocket:
         elif dsMessage.Type == DSMessageType.VoteAbort:
             result = self.DSProcess.VoteAbortCommandHandler(dsMessage)
 
+        elif dsMessage.Type == DSMessageType.PreCommit:
+            result = self.DSProcess.PreCommitCommandHandler(dsMessage)
+
+        elif dsMessage.Type == DSMessageType.PreCommitAcknowledge:
+            result = self.DSProcess.PreCommitAcknowledgeCommandHandler(dsMessage)
+
         elif dsMessage.Type == DSMessageType.GlobalCommit:
             result = self.DSProcess.GlobalCommitCommandHandler(dsMessage)
 

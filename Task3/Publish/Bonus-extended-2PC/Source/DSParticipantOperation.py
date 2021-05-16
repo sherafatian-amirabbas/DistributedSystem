@@ -10,6 +10,7 @@ class DSParticipantOperationStatus(enum.Enum):
     INIT = 1
     READY = 10
     ABORT = 20
+    PRECOMMIT = 25
     COMMIT = 30
 
 
@@ -39,6 +40,11 @@ class DSParticipantOperation:
         self.Operation = dsMessageAsOperation
         self.handleOperationAndAcknowledgeTheCoordinator()
         
+    def PreCommit(self):
+        self.State = DSParticipantOperationStatus.PRECOMMIT
+        coordinatorProcess = dsProcessManager.GetCoordinator()
+        coordinatorProcess.DSSocket.SendMessage(DSMessage(DSMessageType.PreCommitAcknowledge, self.CoordinatorTransactionId))
+
     def Commit(self):
         self.commitOperation()
         self.clearTemporarilyData()
@@ -99,10 +105,10 @@ class DSParticipantOperation:
         coordinatorProcess.DSSocket.SendMessage(DSMessage(messageType, self.CoordinatorTransactionId))
 
 
-        # if messageType == DSMessageType.VoteCommit:
-        #     #if we are sending VoteCommit, means that the participant in the ready state
-        #     # and should wait specific amount of time for the response from coordinatory
-        #     self.dsTimeout.Run(self.onReadyTimeout)
+        if messageType == DSMessageType.VoteCommit:
+            #if we are sending VoteCommit, means that the participant in the ready state
+            # and should wait specific amount of time for the response from coordinatory
+            self.dsTimeout.Run(self.onReadyTimeout)
         
 
     def onReadyTimeout(self):
@@ -110,6 +116,7 @@ class DSParticipantOperation:
         # other participants to find their state. we are deciding as follow based on the other prticipant's state:
         # if other participant's State is INIT => this participant will be ABORT
         # if other participant's State is ABORT => this participant will be ABORT
+        # if other participant's State is PRECOMMIT => this participant will be COMMIT
         # if other participant's State is COMMIT => this participant will be COMMIT
         # if other participant's State is READY => we will reach another participant, if all others are in ready state, 
         # we need to wait for the coordinator to be recovered
@@ -120,7 +127,7 @@ class DSParticipantOperation:
                     state = p.DSSocket.SendMessage(DSMessage(DSMessageType.GetParticipantState, self.CoordinatorTransactionId))
                     if state == DSParticipantOperationStatus.INIT or state == DSParticipantOperationStatus.ABORT:
                         self.Abort()
-                    elif state == DSParticipantOperationStatus.COMMIT:
+                    elif state == DSParticipantOperationStatus.COMMIT or state == DSParticipantOperationStatus.PRECOMMIT:
                         self.Commit()
 
 
