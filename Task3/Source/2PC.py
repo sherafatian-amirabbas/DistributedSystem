@@ -160,6 +160,16 @@ def getProcesses():
     ids = dsProcessManager.GetProcessDescriptions()
     return ", ".join(ids)
 
+
+def getProcessesData():
+    result = ''
+    for p in dsProcessManager.DSProcesses:
+        result +=  p.Id
+        if p.IsCoordinator:
+            result += ' (coordinator)'
+        result += ' : ' + p.DSSocket.SendMessage(DSMessage(DSMessageType.GetData)) + '\n'
+    return result
+
 # -------------------------------------------------------------------------------
 
 @shell(prompt='2PC > ')
@@ -177,15 +187,15 @@ def init(file):
 @main.command()
 @click.argument('value')
 def set(value):
-    result = setNewValue(value)
-    click.echo(result)
+    setNewValue(value)
+    click.echo(getProcessesData())
 
 
 @main.command()
 @click.argument('position')
 def rollback(position):
-    result = rollbackFromPosition(position)
-    click.echo(result)
+    rollbackFromPosition(position)
+    click.echo(getProcessesData())
 
 
 @main.command()
@@ -193,6 +203,7 @@ def rollback(position):
 def add(pid):
     result = addProcess(pid)
     click.echo(result)
+    click.echo('current processes: ' + getProcesses())
 
 
 @main.command()
@@ -200,6 +211,7 @@ def add(pid):
 def remove(pid):
     result = removeProcess(pid)
     click.echo(result)
+    click.echo('current processes: ' + getProcesses())
 
 
 @main.command()
@@ -223,6 +235,11 @@ def arbitrary_failure(pid, timeout):
 def get_data(pid):
     result = getProcessData(pid)
     click.echo(result)
+
+
+@main.command()
+def processes_data():
+    click.echo(getProcessesData())
 
 
 @main.command()

@@ -61,7 +61,7 @@ class DSParticipantOperation:
         # if we are still in INIT state we can safely change the state to abort. And we safe with this
         # approach because for each operation we are creating an instance of this object
         if self.State == DSParticipantOperationStatus.INIT:
-            self.State = DSParticipantOperationStatus.ABORT
+            self.Abort()
 
 
     def getNewID(self):
@@ -99,11 +99,10 @@ class DSParticipantOperation:
         coordinatorProcess.DSSocket.SendMessage(DSMessage(messageType, self.CoordinatorTransactionId))
 
 
-        if messageType == DSMessageType.VoteCommit:
-            #if we are sending VoteCommit, means that the participant in the ready state
-            # and should wait specific amount of time for the response from coordinatory
-            self.dsTimeout.Reset()
-            self.dsTimeout.Run(self.onReadyTimeout)
+        # if messageType == DSMessageType.VoteCommit:
+        #     #if we are sending VoteCommit, means that the participant in the ready state
+        #     # and should wait specific amount of time for the response from coordinatory
+        #     self.dsTimeout.Run(self.onReadyTimeout)
         
 
     def onReadyTimeout(self):

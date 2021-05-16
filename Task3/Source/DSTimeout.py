@@ -7,12 +7,9 @@ class DSTimeout:
         self.timer = DSTimer(1, self.timer_elapsed)
         self.passedSeconds = 0
 
-    def Reset(self):
-        self.Restart()
-
     def Run(self, handler):
         self.handler = handler
-        self.timer.Start()
+        self.timer.Restart()
 
     def timer_elapsed(self):
         self.passedSeconds = self.passedSeconds + 1
